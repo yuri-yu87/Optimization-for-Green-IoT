@@ -1,4 +1,4 @@
-function [opt_SR, opt_gamma0, opt_gamma1, opt_w] = cvxSR(h_RU, h_UE, N, Pt, mth, Pth, eta_b, eta_e, sigmaR2, sigmaE2)
+我function [opt_SR, opt_gamma0, opt_gamma1, opt_w] = cvxSR(h_RU, h_UE, N, Pt, mth, Pth, eta_b, eta_e, sigmaR2, sigmaE2)
 % cvxSR: Alternating optimization using CVX for secrecy rate maximization
 % Implementation notes (updated):
 %   - The receive combining vector g is always set to the MRC solution: g = h_RU / norm(h_RU),

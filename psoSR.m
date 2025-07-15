@@ -38,7 +38,7 @@ for iter_ao = 1:max_iter_ao
     [gamma0, gamma1] = optimize_gamma_grid(h_RU, h_UE, w, mth, eta_b, eta_e, Pth, sigmaR2, sigmaE2);
     
     % Step 3: Check convergence
-    hRw = h_RU' * w;
+            hRw = h_RU.' * w;  % 使用转置，匹配文档
     hRg = h_RU' * g; % MRC combining
     gammaR = eta_b * abs(hRw)^2 * abs(hRg)^2 * abs(gamma0 - gamma1)^2 / (4 * sigmaR2);
     gammaE = eta_b * abs(h_UE)^2 * abs(hRw)^2 * abs(gamma0 - gamma1)^2 / (4 * sigmaE2);
@@ -86,12 +86,12 @@ for iter = 1:max_iter
         w_current = particles(:,i);
         
         % Check energy harvesting constraint
-        P_L_avg = eta_e * (1 - (abs(gamma0)^2 + abs(gamma1)^2)/2) * abs(h_RU' * w_current)^2;
+        P_L_avg = eta_e * (1 - (abs(gamma0)^2 + abs(gamma1)^2)/2) * abs(h_RU.' * w_current)^2;  % 使用转置，匹配文档
         if P_L_avg < Pth
             fitness = -Inf; % Penalize infeasible solutions
         else
             % Calculate secrecy rate (using MRC combining)
-            hRw = h_RU' * w_current;
+            hRw = h_RU.' * w_current;  % 使用转置，匹配文档
             hRg = h_RU' * (h_RU / norm(h_RU)); % MRC combining
             gammaR = eta_b * abs(hRw)^2 * abs(hRg)^2 * abs(gamma0 - gamma1)^2 / (4 * sigmaR2);
             gammaE = eta_b * abs(h_UE)^2 * abs(hRw)^2 * abs(gamma0 - gamma1)^2 / (4 * sigmaE2);
@@ -151,13 +151,13 @@ for g0 = gamma_range
         end
         
         % Check energy harvesting constraint
-        P_L_avg = eta_e * (1 - (abs(g0)^2 + abs(g1)^2)/2) * abs(h_RU' * w)^2;
+        P_L_avg = eta_e * (1 - (abs(g0)^2 + abs(g1)^2)/2) * abs(h_RU.' * w)^2;  % 使用转置，匹配文档
         if P_L_avg < Pth
             continue;
         end
         
         % Calculate secrecy rate (using MRC combining)
-        hRw = h_RU' * w;
+        hRw = h_RU.' * w;  % 使用转置，匹配文档
         hRg = h_RU' * (h_RU / norm(h_RU)); % MRC combining
         gammaR = eta_b * abs(hRw)^2 * abs(hRg)^2 * abs(g0 - g1)^2 / (4 * sigmaR2);
         gammaE = eta_b * abs(h_UE)^2 * abs(hRw)^2 * abs(g0 - g1)^2 / (4 * sigmaE2);
