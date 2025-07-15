@@ -80,7 +80,7 @@ mod_depth = abs(Gamma0 - Gamma1)/2;
 valid_idx = mod_depth >= mth & Gamma0 >= -1 & Gamma0 <= 1 & Gamma1 >= -1 & Gamma1 <= 1;
 Gamma0 = Gamma0(valid_idx);
 Gamma1 = Gamma1(valid_idx);
-mod_depth = mod_depth(valid_idx);
+% mod_depth = mod_depth(valid_idx);
 num_gamma = numel(Gamma0);
 
 % Precompute energy harvesting constraint term for all w
@@ -93,7 +93,7 @@ best_gamma1 = 0;
 best_w = zeros(N,1);
 best_g = zeros(N,1);
 
-fprintf('Start brute-force search for N = %d (vectorized)\n', N);
+% fprintf('Start brute-force search for N = %d (vectorized)\n', N);
 
 for idx_gamma = 1:num_gamma
     gamma0 = Gamma0(idx_gamma);
