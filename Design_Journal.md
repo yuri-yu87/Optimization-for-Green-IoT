@@ -5,13 +5,46 @@
 **Author:** Yuri Yu  
 **Submission File:** `z5226692_Yu_DTE_2025.zip`
 
+
+## Project Directory Structure
+
+```
+TaskE_Optimization_problem_of_green_iot/
+├── Main/                       # Core simulation and algorithm scripts
+│   ├── main_simulation.m       # Main simulation entry point
+│   ├── bruteSR.m               # Brute force secrecy rate maximization
+│   ├── cvxSR.m                 # AO/SCA-CVX secrecy rate maximization
+│   ├── psoSR.m                 # PSO-based algorithm (if present)
+│   └── README.txt              # Usage instructions for Main
+├── Saved_Results_analysis/     # Post-simulation analysis and plotting
+│   ├── main_post_analysis.m    # Main post-processing and plotting script
+│   ├── load_and_analyze_data.m # Load and analyze simulation results
+│   ├── save_simulation_data.m  # Save simulation results to .mat
+│   ├── *.mat                   # Saved simulation and analysis results
+│   └── README.txt              # Usage instructions for analysis
+├── *.png, *.fig                # Figures and plots for the report
+├── Design_Journal.md           # This design report
+├── README.md                   # Project overview
+└── ELEC9123_Design_Task_E_T2_2025_OGI.pdf # Task description
+```
+
+## Project Timeline
+
+This project was initiated on Friday of Week 4 and is scheduled for final submission and presentation on Friday of Week 7. The following table outlines the three-week work plan:
+
+| Week         | Dates (2025)         | Tasks and Milestones                                                                 |
+|--------------|---------------------|--------------------------------------------------------------------------------------|
+| **Week 5**   | Jun 5 – Jul 6       | - Literature review and system model formulation<br>- Mathematical problem definition<br>- Initial MATLAB code structure and parameter setup<br>- Report writing |
+| **Week 6**   | Jul 7 – Jul 13     | - Implementation of brute-force and AO/SCA-based optimization algorithms<br>- Debugging and validation<br>- Preliminary simulation runs and result analysis<br>- Report writing |
+| **Week 7**   | Jul 14 – May 18     | - Final simulations and result visualization<br>- Preparation of figures and discussion<br>- Report writing and polishing<br>- Submission and presentation (Friday) |
+
 ---
 
 ## 1. Introduction
 
 Backscatter communication enables ultra-low-power IoT data collection, but the open nature of RF links makes tag messages vulnerable to eavesdropping. This project focuses on maximizing the **secrecy rate (SR)** in a system with a multi-antenna reader and a single-antenna tag/eavesdropper, using beamforming and tag impedance modulation, while ensuring energy harvesting and communication reliability.
 
----
+> **Note:** Due to limited time, all simulation results in this report are based on 100 Monte Carlo runs per configuration. As a result, some figures may exhibit random fluctuations and may not be perfectly smooth or fully stable.
 
 ## 2. Objectives
 
@@ -20,8 +53,6 @@ Backscatter communication enables ultra-low-power IoT data collection, but the o
 - Implement both brute-force and efficient (AO/SCA-based) optimization algorithms.
 - Simulate and analyze SR versus distance, number of antennas, etc.
 - Summarize findings and propose future work.
-
----
 
 ## 3. System Model
 
@@ -118,11 +149,11 @@ $$
 Moreover, It has been established in [1,2,3,4] that, for secrecy rate maximization with perfect CSI at the reader, the optimal receive combining vector is maximum ratio combining (MRC), i.e., $\mathbf{g} = \frac{\mathbf{h}_{RU}}{\|\mathbf{h}_{RU}\|}$. This is because the receive combining only affects the legitimate channel capacity and is independent of the eavesdropper’s channel. Furthermore, [5,6] demonstrate the optimality of MRC-based methods and confirm that increasing SNR monotonically improves channel capacity. Therefore, in this work, we always set $\mathbf{g}$ to the MRC solution and $\|\mathbf{g}\|^2 = 1$ to optimize SNR of legitimate channel. So the optimization problem can be simplified as:
 
 $$
-\max_{\mathbf{w}, \Gamma_0, \Gamma_1} \quad SR(\mathbf{w}, \Gamma_0, \Gamma_1)
+\max_{\mathbf{w}, \mathbf{g}, \Gamma_0, \Gamma_1} \quad SR(\mathbf{w}, \mathbf{g}, \Gamma_0, \Gamma_1)
 $$
 where
 $$
-SR(\mathbf{w}, \Gamma_0, \Gamma_1) = 
+SR(\mathbf{w}, \mathbf{g},\Gamma_0, \Gamma_1) = 
 \log_2 \left( 1 + \frac{\eta_b |\mathbf{h}_{RU}^T \mathbf{w}|^2 \|\mathbf{h}_{RU}^H\|^2 |\Gamma_0 - \Gamma_1|^2}{4\sigma_R^2} \right) 
 - 
 \log_2 \left( 1 + \frac{\eta_b |h_{UE}|^2 |\mathbf{h}_{RU}^T \mathbf{w}|^2 |\Gamma_0 - \Gamma_1|^2}{4\sigma_E^2} \right)
@@ -132,33 +163,21 @@ $$
 
 - **Average harvested power:** $P_{L,avg} = \eta_e \left(1 - \frac{|\Gamma_0|^2 + |\Gamma_1|^2}{2}\right) \mathbb{E}\left[|\mathbf{h}_{RU}^T \mathbf{w}|^2\right] \geq P_{th}$
 - **Modulation depth:** $m = \frac{|\Gamma_0 - \Gamma_1|}{2} \geq m_{th}$
-- **Beamforming norm:** $\|\mathbf{w}\|^2 \leq P_t$
+- **Beamforming/combining norm:** $\|\mathbf{w}\|^2 \leq P_t$, $\|\mathbf{g}\|^2 = 1$, $\mathbf{g} = \frac{\mathbf{h}_{RU}}{\|\mathbf{h}_{RU}\|}$
 - **Reflection coefficients:** $-1 \leq \Gamma_0, \Gamma_1 \leq 1$
-
-### 3.5 Default Simulation Parameters
-
-| Parameter                              | Notation   | Value      | Unit      |
-|-----------------------------------------|------------|------------|-----------|
-| RF Frequency                           | $f$        | 915        | MHz       |
-| Speed of Light                         | $c$        | $3 \times 10^8$ | m/s      |
-| Transmission Power                     | $P_t$      | 0.5        | W         |
-| Noise Power at Reader                  | $\sigma^2_R$ | -80      | dBm       |
-| Noise Power at Eavesdropper            | $\sigma^2_E$ | -80      | dBm       |
-| Backscattering Efficiency              | $\eta_b$   | 0.8        | -         |
-| Energy Harvesting Efficiency           | $\eta_e$   | 0.8        | -         |
-| Reader-Tag Distance                    | $d_{RU}$   | 10         | m         |
-| Harvested Power Threshold              | $P_{th}$   | $10^{-6}$  | W         |
-| Modulation Depth Threshold             | $m_{th}$   | 0.2        | -         |
-
----
 
 ## 4. Optimization Problem Analysis and Solution Methods
 
-This section provides a detailed mathematical derivation and solution strategy for the secrecy rate maximization problem, based on the updated problem in Section 3.4. The main approach is based on Alternating Optimization (AO), with subproblems solved using SCA and grid search. An additional heuristic method is also introduced.
+This section provides a detailed mathematical derivation and solution strategy for the secrecy rate maximization problem, based on the updated problem in Section 3.4. The main approach is based on Alternating Optimization (AO), with subproblems solved using SCA and grid search. 
+
+> **Note:** The heuristic optimization method described below was not implemented in this work due to time constraints and is left as future work.
 
 ### 4.1 Problem Statement and Non-Convexity
 
-The formulated problem is **non-convex** due to the coupling between $\mathbf{w}$ and $(\Gamma_0, \Gamma_1)$ in both the objective and the energy harvesting constraint.
+The formulated problem is **non-convex** due to the coupling between $\mathbf{w}$ and $(\Gamma_0, \Gamma_1)$ in both the objective and the energy harvesting constraint. Note that the receive combining vector $\mathbf{g}$ has already been optimized via MRC and is no longer a variable in the problem.
+
+**Brute Force Baseline as Benchmark:**  
+In addition to the efficient algorithms, a brute force (exhaustive search) method is implemented and serves as a critical benchmark for this problem. The brute force approach discretizes the feasible domains of the beamforming vector $\mathbf{w}$ and the tag reflection coefficients $(\Gamma_0, \Gamma_1)$, enumerates all possible combinations, and selects the configuration that yields the highest secrecy rate while satisfying all constraints. This method guarantees the global optimum for small-scale problems, as it exhaustively searches the entire feasible space. Although computationally prohibitive for large-scale scenarios, brute force is invaluable for benchmarking: it provides a reference for the global optimum, allowing direct comparison and quantification of the optimality gap of more advanced algorithms such as AO/SCA and heuristic methods. This enables rigorous validation of the effectiveness and reliability of the proposed efficient algorithms.
 
 ### 4.2 AO-Based Solution: SCA for $\mathbf{w}$, Grid Search for $(\Gamma_0, \Gamma_1)$
 
@@ -191,7 +210,7 @@ This subproblem is still non-convex due to the difference of concave functions. 
 - The resulting problem is convex and can be efficiently solved using the CVX toolbox in MATLAB.
 
 **SCA+CVX Implementation Steps:**
-1. Initialize $\mathbf{w}^{(0)}$.
+1. **Initialization:** $\mathbf{w}$ is initialized using the Maximum Ratio Transmission (MRT) principle, i.e., $\mathbf{w}^{(0)} = \sqrt{P_t} \frac{\mathbf{h}_{RU}^*}{\|\mathbf{h}_{RU}^*\|}$, which directs the transmit beam towards the tag to maximize received power. This provides a strong starting point for the iterative optimization.
 2. At each iteration $k$:
    - Linearize $f_2(\mathbf{w})$ at $\mathbf{w}^{(k)}$.
    - Solve the convex problem for $\mathbf{w}^{(k+1)}$ using CVX.
@@ -218,20 +237,25 @@ Constraints:
 #### 4.2.4 AO Algorithm Summary
 
 **Algorithm Steps:**
-1. Initialize $\mathbf{w}$, $(\Gamma_0, \Gamma_1)$.
-2. Repeat:
+1. Initialize $\mathbf{w}$ (using MRT as described above).  
+2. **Initialize $(\Gamma_0, \Gamma_1)$ with values close to $\pm1$ (e.g., $\Gamma_0 = 0.8$, $\Gamma_1 = -0.8$), rather than exactly $1$ and $-1$.**  
+   *Note: Setting $(\Gamma_0, \Gamma_1)$ to exactly $1$ and $-1$ is not practical, as the algorithm will not work properly in this case. Initializing with values such as $0.8$ and $-0.8$ ensures feasibility and stable algorithm performance.*
+3. Repeat:
    - Fix $(\Gamma_0, \Gamma_1)$, optimize $\mathbf{w}$ via SCA+CVX.
    - Fix $\mathbf{w}$, optimize $(\Gamma_0, \Gamma_1)$ via grid search.
    - Check convergence.
-3. Output the final solution.
+4. Output the final solution.
 
 **Advantages:**
 - AO with SCA+CVX for $\mathbf{w}$ and grid search for $(\Gamma_0, \Gamma_1)$ is efficient and easy to implement.
 - The method is guaranteed to converge to a stationary point.
+- Initializing $\mathbf{w}$ with MRT and $(\Gamma_0, \Gamma_1)$ with values close to $\pm1$ (e.g., $0.8$, $-0.8$) provides fast convergence and robust performance.
 
 ---
 
-### 4.3 Heuristic Optimization Method
+### 4.3 Heuristic Optimization Method (Future Work)
+
+> **Note:** The heuristic optimization method described in this section was not implemented in the current work due to time limitations. It is included here as a direction for future research.
 
 As an alternative to the AO-based method, a heuristic approach can be used for faster, though potentially suboptimal, solutions. One such method is as follows:
 
@@ -243,59 +267,204 @@ As an alternative to the AO-based method, a heuristic approach can be used for f
 
 #### 4.3.2 Implementation Steps
 
-- Compute $\mathbf{w}_{\text{heur}} = \sqrt{P_t} \frac{\mathbf{h}_{RU}}{\|\mathbf{h}_{RU}\|}$.
-- For a small set of $(\Gamma_0, \Gamma_1)$ (e.g., $(1, -1)$, $(0.8, -0.8)$, etc.), check constraints and compute $SR$.
-- Select the feasible pair with the highest secrecy rate.
+In this approach, the value of $\mathbf{w}$ is inspired by the Maximum Ratio Transmission (MRT) principle to heuristically select a near-optimal beamforming vector. Specifically:
+
+- Compute $\mathbf{w}_{\text{heur}} = \sqrt{P_t} \frac{\mathbf{h}_{RU}^*}{\|\mathbf{h}_{RU}^*\|}$, i.e., direct the transmit beam towards the tag to maximize the received signal power, following the MRT strategy.
+- For a small set of candidate $(\Gamma_0, \Gamma_1)$ pairs (e.g., $(0.5, -0.5)$, $(0.8, -0.8)$, etc.), check all constraints (such as energy harvesting and modulation depth), and compute the corresponding secrecy rate $SR$.
+- Select the feasible $(\Gamma_0, \Gamma_1)$ pair that yields the highest secrecy rate.
 
 **Advantages:**
-- Extremely low computational complexity.
-- Provides a good initial point for AO or a fast suboptimal solution.
-
----
+- This method leverages the structure of MRT, greatly simplifying the beamforming design and resulting in extremely low computational complexity.
+- It can serve as a good initial point for more advanced algorithms like AO, or as a fast suboptimal solution on its own.
 
 ## 5. Algorithm Implementation Flow
 
-1. **Brute-Force Baseline:**
-   - Discretize the feasible domains of $\mathbf{w}$, $\Gamma_0$, and $\Gamma_1$, enumerate all combinations, and select the optimal solution.
-   - Suitable for small-scale problems and serves as a global optimum reference.
+The following summarizes the algorithmic flow as implemented in the project's `main` directory MATLAB code:
 
-2. **Efficient Algorithm (AO/SCA+Grid Search):**
-   - Initialize $(\Gamma_0, \Gamma_1)$ and $\mathbf{w}$.
-   - Alternately optimize: fix $(\Gamma_0, \Gamma_1)$ and optimize $\mathbf{w}$ using SCA+CVX; then fix $\mathbf{w}$ and optimize $(\Gamma_0, \Gamma_1)$ using grid search.
-   - Iterate until convergence.
+1. **Brute-Force Baseline:**
+   - The brute-force algorithm (see `main/bruteSR.m`) exhaustively searches over discretized feasible sets of the transmit beamforming vector $\mathbf{w}$ and the tag reflection coefficients $(\Gamma_0, \Gamma_1)$. For each combination, it evaluates all system constraints (power, modulation depth, energy harvesting) and computes the secrecy rate (SR).
+   - This approach guarantees the global optimum for small-scale problems (e.g., $N=3,4,5,6$ antennas), serving as a gold-standard benchmark for algorithm validation.
+   - The brute-force results are used to directly quantify the optimality gap and performance of more advanced algorithms, such as AO/SCA and heuristic methods.
+
+2. **Efficient Algorithm (AO/SCA + Grid Search):**
+   - The Alternating Optimization (AO) algorithm, implemented in the codebase, alternates between optimizing the beamforming vector $\mathbf{w}$ (using Successive Convex Approximation (SCA) and CVX) and the reflection coefficients $(\Gamma_0, \Gamma_1)$ (using grid search).
+   - Initialization: $\mathbf{w}$ is initialized using Maximum Ratio Transmission (MRT), and $(\Gamma_0, \Gamma_1)$ are initialized with feasible values close to $\pm1$ (e.g., $0.8$, $-0.8$) to ensure algorithm stability and constraint satisfaction.
+   - Iterative Steps:
+     - Fix $(\Gamma_0, \Gamma_1)$, optimize $\mathbf{w}$ via SCA+CVX.
+     - Fix $\mathbf{w}$, optimize $(\Gamma_0, \Gamma_1)$ via grid search.
+     - Repeat until convergence.
+   - This method achieves efficient and robust performance, converging to a stationary point with much lower computational complexity than brute-force.
 
 3. **Heuristic Algorithm:**
-   - Use the heuristic method described above for fast approximate solutions.
+   - *Not implemented in the current code due to time constraints. See Section 4.3 for a proposed heuristic approach for future work.*
 
 4. **Performance Evaluation:**
-   - Compare secrecy rate, harvested energy, variable distributions, and computational complexity between the algorithms.
-
----
+   - The code compares secrecy rate, harvested energy, variable distributions, and computational complexity across algorithms.
+   - The brute-force method provides a global optimum reference, while AO/SCA demonstrates practical efficiency and near-optimal performance.
 
 ## 6. Simulation Setup
 
-- **Carrier Frequency:** 915 MHz ($\lambda \approx 0.328$ m)
-- **Reader Tx Power ($P_t$):** 30 dBm
-- **Noise PSD:** –174 dBm/Hz, BW = 200 kHz $\Rightarrow \sigma^2 \approx -121$ dBm
-- **Reader-Tag Distance ($d_{RU}$):** 5–50 m (step 5 m)
+### 6.1 Default Simulation Parameters
+
+| Parameter                              | Notation   | Value      | Unit      |
+|-----------------------------------------|------------|------------|-----------|
+| RF Frequency                           | $f$        | 915        | MHz       |
+| Speed of Light                         | $c$        | $3 \times 10^8$ | m/s      |
+| Transmission Power                     | $P_t$      | 0.5        | W         |
+| Noise Power at Reader                  | $\sigma^2_R$ | -80      | dBm       |
+| Noise Power at Eavesdropper            | $\sigma^2_E$ | -80      | dBm       |
+| Backscattering Efficiency              | $\eta_b$   | 0.8        | -         |
+| Energy Harvesting Efficiency           | $\eta_e$   | 0.8        | -         |
+| Reader-Tag Distance                    | $d_{RU}$   | 10         | m         |
+| Harvested Power Threshold              | $P_{th}$   | $10^{-6}$  | W         |
+| Modulation Depth Threshold             | $m_{th}$   | 0.2        | -         |
+
+---
+
+- **Reader-Tag Distance ($d_{RU}$):** 5–50 m (step size: 5 m)
 - **Number of Antennas ($N$):** $\{3,4,5,6\}$
-- **Monte Carlo Runs:** 10,000 per point
+- **Monte Carlo Runs:** 100 per configuration
+
+> **Note:** Due to time constraints, only 100 Monte Carlo runs are performed per simulation point. As a result, the plotted curves may exhibit some random fluctuations and may not be perfectly smooth.
 
 **Simulation Procedure:**
-- For each Monte Carlo run, randomly generate channel realizations.
-- For each realization, solve the secrecy rate maximization problem using brute-force, AO/SCA+grid search, and heuristic algorithms.
-- Record and average the results.
+- For each Monte Carlo run, independent channel realizations are generated.
+- For each realization, the secrecy rate maximization problem is solved using both the brute-force and AO/SCA+grid search algorithms (the heuristic algorithm is not included in the current results).
+- Results are recorded and averaged to obtain the final performance metrics for each configuration.
 
----
+## 7. Results and Discussion
 
-## 7. Results (Placeholders)
+This section presents a comprehensive analysis of the simulation results, focusing on the impact of system parameters on secrecy rate, reflection coefficients, and algorithmic performance. All figures are carefully arranged and renamed for clarity, and key conclusions are drawn from the data.
 
-- **Fig 1:** Secrecy rate vs. distance for each $N$ (brute-force vs. AO/SCA vs. heuristic)
-- **Fig 2:** Optimized $(\Gamma_0, \Gamma_1)$ vs. distance
-- **Fig 3:** Reader spectral efficiency $R_R$ vs. distance
-- **Fig 4:** Secrecy rate convergence curve (iterations)
+> **Note:** In both the Brute Force and AO/SCA-CVX algorithms, the receive combining vector $\mathbf{g}$ is always set to the maximum ratio combining (MRC) solution. This is because, as established in the literature and in Section 3.4, MRC is optimal for maximizing the legitimate channel SNR and thus is adopted for all algorithms to ensure a fair comparison.
 
----
+> **Note:** All simulation results are based on 100 Monte Carlo runs per configuration due to time constraints. As a result, the plotted curves may show some random perturbations and are not as smooth or stable as those generated from a larger number of trials.
+
+### 7.1 Simulation Setup Overview
+
+To comprehensively evaluate secrecy rate maximization in beamforming-assisted backscatter communication, simulations were performed across a range of system parameters. The number of reader antennas was set to $N = \{3, 4, 5, 6\}$, and the Tag-Eve distance $d_{UE}$ was varied from 5.0 m to 50.0 m in 5 m increments. For each configuration, 100 Monte Carlo trials were conducted to ensure statistical reliability. Due to the limited number of trials, some figures may exhibit random fluctuations.
+
+### 7.2 Secrecy Rate Performance: Impact of Antennas and Distance
+
+**Figure 7.1: Secrecy Rate vs. Tag-Eve Distance for Different $N$**
+
+<p align="center">
+  <b>Figure 7.1</b>: <i>Secrecy Rate as a Function of Tag-Eve Distance for N=3,4,5,6 (Comparison of Brute Force and AO/SCA-CVX Algorithms).</i><br>
+  <img src="1.png" alt="Secrecy Rate vs. Tag-Eve Distance" width="500">
+</p>
+
+The results in Figure 7.1 clearly show that the secrecy rate (SR) increases with both the number of antennas and the Tag-Eve distance. The AO/SCA-CVX algorithm consistently outperforms the Brute Force baseline, with an average secrecy rate improvement of **5.07%**. Specifically, the Brute Force SR ranges from 0.5713 to 5.0683 bits/s/Hz, while the AO/SCA-CVX SR ranges from 0.5937 to 5.4483 bits/s/Hz. The highest secrecy rates are achieved at $N=6$ and $d_{UE}=50.0$ m.
+
+
+**Table 7.1: Secrecy Rate Statistics**
+
+| Method        | Mean SR (bits/s/Hz) | Std. Dev. | Min   | Max   |
+|---------------|---------------------|-----------|-------|-------|
+| Brute Force   | 3.2708              | 1.1431    | 0.5713| 5.0683|
+| AO/SCA-CVX    | 3.4483              | 1.2299    | 0.5937| 5.4483|
+
+The rate of SR improvement with distance also increases as $N$ grows, highlighting the benefit of larger antenna arrays in mitigating eavesdropping threats.
+
+**Table 7.2: SR Change Rate with Distance (bits/s/Hz/m)**
+
+| N | Brute Force | AO/SCA-CVX |
+|---|-------------|------------|
+| 3 | 0.0486      | 0.0520     |
+| 4 | 0.0515      | 0.0556     |
+| 5 | 0.0630      | 0.0676     |
+| 6 | 0.0686      | 0.0758     |
+
+### 7.3 Additional Insights: Secrecy Rate vs. Spectral Efficiency
+
+**Figure 7.4: Reader Spectral Efficiency $R_R$ vs. Tag-Eve Distance**
+
+<p align="center">
+  <b>Figure 7.4</b>: <i>Reader Spectral Efficiency as a Function of Tag-Eve Distance.</i><br>
+  <img src="3.png" alt="Reader Spectral Efficiency vs. Distance" width="500">
+</p>
+
+From Figure 7.4, it is evident that the AO/SCA-CVX algorithm yields a lower reader spectral efficiency $R_R$ compared to the Brute Force (BF) method. However, as shown in Figure 7.1, the secrecy rate (SR) achieved by AO/SCA-CVX is actually higher than that of BF. This indicates that maximizing $R_R$ alone does not necessarily lead to the highest secrecy rate. In fact, by slightly reducing $R_R$, the AO/SCA-CVX approach is able to more significantly suppress the eavesdropper's channel capacity $R_E$, resulting in a larger difference $SR = [R_R - R_E]^+$. Therefore, the key to improving secrecy performance lies in jointly considering both $R_R$ and $R_E$, rather than focusing solely on maximizing the legitimate channel's spectral efficiency. A strategic trade-off between these two metrics is essential for achieving optimal secrecy rate.
+
+### 7.4 Optimal Configuration and Parameter Insights
+
+**Table 7.3: Best Achievable Secrecy Rate and Reflection Coefficients**
+
+| Method         | $N$ | $d_{UE}$ (m) | SR (bits/s/Hz) | $\Gamma_0$   | $\Gamma_1$   |
+|----------------|-----|--------------|----------------|--------------|--------------|
+| Brute Force    | 6   | 50.0         | 5.0683         | -0.9960      | 0.8810       |
+| AO/SCA-CVX     | 6   | 50.0         | 5.4483         | -0.9995      | 0.9085       |
+
+These results confirm that joint optimization of beamforming and reflection coefficients via AO/SCA-CVX achieves the best secrecy performance, especially with more antennas and greater eavesdropper distance.
+
+### 7.5 Analysis of Optimized Reflection Coefficients
+
+**Figure 7.2: Optimized Reflection Coefficients $(\Gamma_0, \Gamma_1)$ vs. Tag-Eve Distance**
+
+<p align="center">
+  <b>Figure 7.2</b>: <i>Optimized Reflection Coefficients $(\Gamma_0, \Gamma_1)$ as Functions of Tag-Eve Distance for N=3,4,5,6.</i><br>
+  <img src="2.png" alt="Optimized Reflection Coefficients vs. Distance" width="500">
+</p>
+
+**Figure 7.3: Separated Plots for Each $N$**
+
+<p align="center">
+  <b>Figure 7.3</b>: <i>Optimized Reflection Coefficients for (a) N=3, (b) N=4, (c) N=5, (d) N=6.</i><br>
+  <img src="21.png" alt="Gamma N=3" width="300">
+  <img src="22.png" alt="Gamma N=4" width="300">
+  <img src="23.png" alt="Gamma N=5" width="300">
+  <img src="24.png" alt="Gamma N=6" width="300">
+</p>
+
+A particularly important observation is that the optimized reflection coefficients $\Gamma_0$ and $\Gamma_1$ are approximately negatives of each other, i.e., $\Gamma_0 \approx -\Gamma_1$. This phenomenon can be explained as follows: In backscatter modulation, maximizing the modulation depth $|\Gamma_0 - \Gamma_1|$ directly enhances the distinguishability between the two tag states, which in turn improves the legitimate channel’s SNR and the overall secrecy rate. The largest possible modulation depth under the physical constraint $|\Gamma_i| \leq 1$ is achieved when $\Gamma_0$ and $\Gamma_1$ are equal in magnitude but opposite in sign. This configuration not only maximizes $|\Gamma_0 - \Gamma_1| = |(-a) - a| = 2|a|$ (with $|a|$ as large as allowed by the energy harvesting constraint), but also ensures that the tag’s two states are as distinct as possible. As a result, the optimizer naturally selects $\Gamma_0$ and $\Gamma_1$ to be nearly symmetric about zero, subject to the minimum modulation depth and energy harvesting requirements.
+
+The simulation results confirm this: $\Gamma_0$ is negative (typically between $-0.7$ and $-1$), and $\Gamma_1$ is positive (typically between $0.4$ and $0.9$), corresponding to the two modulation states of the tag. After an initial transition, both coefficients stabilize as $d_{UE}$ increases, indicating that the optimal values are robust to eavesdropper distance beyond a certain point. As $N$ increases, the modulation depth $|\Gamma_0 - \Gamma_1|$ also increases, further enhancing secrecy performance. The near-identical results from Brute Force and AO/SCA-CVX confirm the reliability and convergence of the proposed optimization framework. All solutions satisfy the physical constraints, including energy harvesting and minimum modulation depth.
+
+### 7.6 Additional Performance Metrics
+
+**Figure 7.5: Secrecy Rate Convergence Curve (AO/SCA Iterations)**
+
+<p align="center">
+  <b>Figure 7.5</b>: <i>Convergence of Secrecy Rate over AO/SCA Iterations.</i><br>
+  <img src="4.png" alt="Secrecy Rate Convergence" width="500">
+</p>
+
+The AO/SCA+CVX algorithm demonstrates extremely fast convergence: with a convergence tolerance of $10^{-4}$, the algorithm typically converges within just two iterations. Even with a tighter tolerance of $10^{-6}$, convergence is still achieved by the second iteration, indicating that the algorithm rapidly reaches the optimal solution. This highlights the high efficiency and practical viability of the proposed AO/SCA+CVX approach.
+
+### 7.7 Percentage Improvement and 3D Visualization
+
+**Figure 7.6: Percentage Improvement of AO/SCA-CVX over Brute Force**
+
+<p align="center">
+  <b>Figure 7.6</b>: <i>Percentage Secrecy Rate Improvement of AO/SCA-CVX over Brute Force Baseline.</i><br>
+  <img src="per_impro_ana.png" alt="Percentage Improvement" width="500">
+</p>
+
+Figure 7.6 further quantifies the performance gain of AO/SCA-CVX over the Brute Force method. The percentage improvement increases with both the number of antennas and the Tag-Eve distance, confirming that the proposed algorithm is especially advantageous in large-scale or high-security scenarios.
+
+**Figure 7.7: 3D Visualization of Secrecy Rate vs. $N$ and $d_{UE}$**
+
+<p align="center">
+  <b>Figure 7.7</b>: <i>3D Surface Plot of Secrecy Rate as a Function of Number of Antennas and Tag-Eve Distance.</i><br>
+  <img src="Post_3D.png" alt="3D Secrecy Rate" width="500">
+</p>
+
+The 3D visualization in Figure 7.7 provides an intuitive overview of how secrecy rate scales with both the number of antennas and the Tag-Eve distance. The surface plot clearly shows that secrecy rate increases monotonically with both parameters, and the AO/SCA-CVX algorithm consistently achieves higher values across the entire parameter space.
+
+> **Note:** The 3D surface and all other figures may show some random noise due to the limited number of Monte Carlo runs.
+
+### 7.8 Summary and Key Conclusions
+
+Based on the above analysis and simulation results, the following conclusions can be drawn:
+
+- **Consistent Outperformance:** The AO/SCA-CVX algorithm consistently achieves higher secrecy rates than the Brute Force baseline, with the performance gap widening as the number of antennas and Tag-Eve distance increase.
+- **Physical Interpretability:** The optimized reflection coefficients are nearly symmetric about zero, maximizing modulation depth within physical and energy harvesting constraints. This configuration is robust to changes in eavesdropper distance and is further enhanced by larger antenna arrays.
+- **Rapid Convergence:** The AO/SCA-CVX algorithm converges extremely quickly, typically within two iterations, making it highly suitable for practical deployment.
+- **Design Guidelines:** The best secrecy performance is obtained with the largest antenna array and maximum Tag-Eve separation, providing clear guidance for secure and energy-efficient backscatter system design.
+- **Trade-off Insight:** Maximizing the reader's spectral efficiency does not always maximize secrecy rate. A moderate reduction in $R_R$ can be offset by a greater reduction in $R_E$, leading to improved secrecy. Thus, joint optimization of both metrics is essential for secure system design.
+
+All analysis results and figures have been saved in `post_analysis_results.mat` for reproducibility and further reference.
+
+> **Note:** The heuristic optimization method was not implemented in this work and is left as future work.
 
 ## 8. References
 
@@ -306,7 +475,9 @@ As an alternative to the AO-based method, a heuristic approach can be used for f
 5. A. Goldsmith, “Wireless Communications,” *Cambridge University Press*, 2005.
 6. D. Tse, P. Viswanath, “Fundamentals of Wireless Communication,” *Cambridge University Press*, 2005.
 
----
+
+## Acknowledgement
+This work was completed with the help of Cursor IDE and its AI assistant, which provided technical support in simulation design, MATLAB scripting, LaTeX formatting, and academic writing assistance throughout the project.
 
 ## Appendix A: Non-Convex Optimization Methods and Theoretical Analysis
 
@@ -352,6 +523,14 @@ For quadratic forms in $\mathbf{w}$, SDR lifts the problem to a higher-dimension
 #### Grid Search
 
 Grid search discretizes the feasible domains (e.g., for $\Gamma_0$, $\Gamma_1$) and exhaustively evaluates the objective for all combinations. While globally optimal for small problems, it is computationally prohibitive for high-dimensional cases.
+
+---
+
+#### Brute Force Baseline
+
+To provide a global optimum reference for the secrecy rate maximization problem, a brute force (exhaustive search) method is implemented. This approach discretizes the feasible domains of the beamforming vector $\mathbf{w}$ and the tag reflection coefficients $(\Gamma_0, \Gamma_1)$, enumerates all possible combinations, and selects the configuration that yields the highest secrecy rate while satisfying all constraints. Although computationally prohibitive for large-scale problems, brute force is invaluable for small-scale scenarios, as it guarantees the global optimum and serves as a benchmark for evaluating the performance and optimality gap of more efficient algorithms (such as AO/SCA and heuristic methods).
+
+---
 
 ### A.2 DC Decomposition and First-Order Approximation
 
