@@ -146,7 +146,9 @@ $$
 
 #### Simplified Optimization Problem
 
-Moreover, It has been established in [1,2,3,4] that, for secrecy rate maximization with perfect CSI at the reader, the optimal receive combining vector is maximum ratio combining (MRC), i.e., $\mathbf{g} = \frac{\mathbf{h}_{RU}}{\|\mathbf{h}_{RU}\|}$. This is because the receive combining only affects the legitimate channel capacity and is independent of the eavesdropper’s channel. Furthermore, [5,6] demonstrate the optimality of MRC-based methods and confirm that increasing SNR monotonically improves channel capacity. Therefore, in this work, we always set $\mathbf{g}$ to the MRC solution and $\|\mathbf{g}\|^2 = 1$ to optimize SNR of legitimate channel. So the optimization problem can be simplified as:
+**Beyond exploiting the intrinsic randomness of wireless channels for physical layer security (PLS), a fundamental principle of PLS is the intentional design of signaling strategies and power allocation to engineer the effective channels, thereby ensuring that the legitimate channel consistently outperforms the eavesdropper’s channel [7].**
+
+Moreover, it has been established in [1,2,3,4] that, for secrecy rate maximization with perfect CSI at the reader, the optimal receive combining vector is maximum ratio combining (MRC), i.e., $\mathbf{g} = \frac{\mathbf{h}_{RU}}{\|\mathbf{h}_{RU}\|}$. This is because the receive combining only affects the legitimate channel capacity and is independent of the eavesdropper’s channel. Furthermore, [5,6] demonstrate the optimality of MRC-based methods and confirm that increasing SNR monotonically improves channel capacity. Therefore, in this work, we always set $\mathbf{g}$ to the MRC solution and $\|\mathbf{g}\|^2 = 1$ to optimize the SNR of the legitimate channel. Thus, the optimization problem can be simplified as:
 
 $$
 \max_{\mathbf{w}, \mathbf{g}, \Gamma_0, \Gamma_1} \quad SR(\mathbf{w}, \mathbf{g}, \Gamma_0, \Gamma_1)
@@ -183,7 +185,7 @@ In addition to the efficient algorithms, a brute force (exhaustive search) metho
 
 #### 4.2.1 AO Framework
 
-The main solution framework is Alternating Optimization (AO):
+The main solution framework for the secrecy rate maximization problem in this project is **Alternating Optimization (AO)**, which alternately optimizes the transmit beamforming vector $\mathbf{w}$ and the tag reflection coefficients $(\Gamma_0, \Gamma_1)$:
 
 1. **Fix $(\Gamma_0, \Gamma_1)$, optimize $\mathbf{w}$ (Subproblem 1)**
 2. **Fix $\mathbf{w}$, optimize $(\Gamma_0, \Gamma_1)$ (Subproblem 2)**
@@ -191,48 +193,81 @@ The main solution framework is Alternating Optimization (AO):
 
 #### 4.2.2 Subproblem 1: SCA-Based Optimization of $\mathbf{w}$
 
-With $(\Gamma_0, \Gamma_1)$ fixed, the secrecy rate objective can be rewritten as:
+With $(\Gamma_0, \Gamma_1)$ fixed, the secrecy rate objective in this project can be written as:
 $$
 SR(\mathbf{w}) = \log_2\left(1 + a|\mathbf{h}_{RU}^T \mathbf{w}|^2\right) - \log_2\left(1 + b|\mathbf{h}_{RU}^T \mathbf{w}|^2\right)
 $$
-where $a = \frac{\eta_b \|\mathbf{h}_{RU}^H\|^2 |\Gamma_0 - \Gamma_1|^2}{4\sigma_R^2}$ and $b = \frac{\eta_b |h_{UE}|^2 |\Gamma_0 - \Gamma_1|^2}{4\sigma_E^2}$.
+where
+$$
+a = \frac{\eta_b \|\mathbf{h}_{RU}^H\|^2 |\Gamma_0 - \Gamma_1|^2}{4\sigma_R^2}, \quad
+b = \frac{\eta_b |h_{UE}|^2 |\Gamma_0 - \Gamma_1|^2}{4\sigma_E^2}
+$$
 
-The constraints become:
+The constraints are:
 - $\|\mathbf{w}\|^2 \leq P_t$
 - $\eta_e \left(1 - \frac{|\Gamma_0|^2 + |\Gamma_1|^2}{2}\right) |\mathbf{h}_{RU}^T \mathbf{w}|^2 \geq P_{th}$
 
-This subproblem is still non-convex due to the difference of concave functions. We use **Successive Convex Approximation (SCA)** to solve it:
+This problem is non-convex because the objective is a difference of two concave functions. To address this, we apply **Successive Convex Approximation (SCA)**, which is particularly suitable for this structure.
 
-- At each SCA iteration, linearize the concave part $f_2(\mathbf{w}) = \log_2(1 + b|\mathbf{h}_{RU}^T \mathbf{w}|^2)$ at the current point $\mathbf{w}^{(k)}$:
-  $$
-  f_2(\mathbf{w}) \approx f_2(\mathbf{w}^{(k)}) + \nabla f_2(\mathbf{w}^{(k)})^T (\mathbf{w} - \mathbf{w}^{(k)})
-  $$
-- The resulting problem is convex and can be efficiently solved using the CVX toolbox in MATLAB.
+**SCA Mathematical Derivation (Specific to This Project):**
 
-**SCA+CVX Implementation Steps:**
-1. **Initialization:** $\mathbf{w}$ is initialized using the Maximum Ratio Transmission (MRT) principle, i.e., $\mathbf{w}^{(0)} = \sqrt{P_t} \frac{\mathbf{h}_{RU}^*}{\|\mathbf{h}_{RU}^*\|}$, which directs the transmit beam towards the tag to maximize received power. This provides a strong starting point for the iterative optimization.
-2. At each iteration $k$:
-   - Linearize $f_2(\mathbf{w})$ at $\mathbf{w}^{(k)}$.
-   - Solve the convex problem for $\mathbf{w}^{(k+1)}$ using CVX.
-   - Check convergence; if not, repeat.
+Let $x = |\mathbf{h}_{RU}^T \mathbf{w}|^2$. The secrecy rate can be rewritten as:
+$$
+SR(x) = \log_2(1 + a x) - \log_2(1 + b x)
+$$
+The first term is concave in $x$, while the second term is also concave, so their difference is generally non-convex.
+
+At each SCA iteration $k$, we linearize the second (concave) term at the current point $x^{(k)}$ using first-order Taylor expansion:
+$$
+\log_2(1 + b x) \approx \log_2(1 + b x^{(k)}) + \frac{b}{\ln 2} \cdot \frac{1}{1 + b x^{(k)}} (x - x^{(k)})
+$$
+
+Therefore, the SCA-approximated objective at iteration $k$ becomes:
+$$
+SR_{\text{SCA}}(x) = \log_2(1 + a x) - \left[ \log_2(1 + b x^{(k)}) + \frac{b}{\ln 2} \cdot \frac{1}{1 + b x^{(k)}} (x - x^{(k)}) \right]
+$$
+
+Substituting back $x = |\mathbf{h}_{RU}^T \mathbf{w}|^2$, the SCA subproblem at each iteration is:
+$$
+\begin{aligned}
+\max_{\mathbf{w}} \quad & \log_2(1 + a |\mathbf{h}_{RU}^T \mathbf{w}|^2) - \frac{b}{\ln 2} \cdot \frac{1}{1 + b x^{(k)}} \left(|\mathbf{h}_{RU}^T \mathbf{w}|^2 - x^{(k)}\right) \\
+\text{s.t.} \quad & \|\mathbf{w}\|^2 \leq P_t \\
+& \eta_e \left(1 - \frac{|\Gamma_0|^2 + |\Gamma_1|^2}{2}\right) |\mathbf{h}_{RU}^T \mathbf{w}|^2 \geq P_{th}
+\end{aligned}
+$$
+This is now a convex problem in $\mathbf{w}$ and can be efficiently solved using convex optimization tools such as CVX.
+
+**SCA+CVX Implementation Steps (Project-Specific):**
+1. **Initialization:** Set $\mathbf{w}^{(0)} = \sqrt{P_t} \frac{\mathbf{h}_{RU}^*}{\|\mathbf{h}_{RU}^*\|}$ (Maximum Ratio Transmission, MRT), which maximizes the received power at the tag and provides a good starting point.
+2. At each SCA iteration $k$:
+   - Compute $x^{(k)} = |\mathbf{h}_{RU}^T \mathbf{w}^{(k)}|^2$.
+   - Linearize the concave part as above.
+   - Solve the resulting convex problem for $\mathbf{w}^{(k+1)}$ using CVX.
+   - Check for convergence; if not converged, repeat.
+
+This SCA approach is tailored to the structure of the secrecy rate maximization problem in this project, ensuring both efficiency and convergence to a stationary point.
 
 #### 4.2.3 Subproblem 2: Grid Search for $(\Gamma_0, \Gamma_1)$
 
-With $\mathbf{w}$ fixed, the secrecy rate is a function of $(\Gamma_0, \Gamma_1)$:
+With $\mathbf{w}$ fixed, the secrecy rate becomes a function of $(\Gamma_0, \Gamma_1)$:
 $$
 SR(\Gamma_0, \Gamma_1) = \log_2\left(1 + c|\Gamma_0 - \Gamma_1|^2\right) - \log_2\left(1 + d|\Gamma_0 - \Gamma_1|^2\right)
 $$
-where $c = \frac{\eta_b |\mathbf{h}_{RU}^T \mathbf{w}|^2 \|\mathbf{h}_{RU}^H\|^2}{4\sigma_R^2}$ and $d = \frac{\eta_b |h_{UE}|^2 |\mathbf{h}_{RU}^T \mathbf{w}|^2}{4\sigma_E^2}$.
+where
+$$
+c = \frac{\eta_b |\mathbf{h}_{RU}^T \mathbf{w}|^2 \|\mathbf{h}_{RU}^H\|^2}{4\sigma_R^2}, \quad
+d = \frac{\eta_b |h_{UE}|^2 |\mathbf{h}_{RU}^T \mathbf{w}|^2}{4\sigma_E^2}
+$$
 
-Constraints:
+Subject to:
 - $\frac{|\Gamma_0 - \Gamma_1|}{2} \geq m_{th}$
 - $-1 \leq \Gamma_0, \Gamma_1 \leq 1$
-- $\eta_e \left(1 - \frac{|\Gamma_0|^2 + |\Gamma_1|^2}{2}\right) |\mathbf{h}_{RU}^T \mathbf{w}|^2 \geq P_{th}$, where $|\mathbf{h}_{RU}^T \mathbf{w}|^2 $ is a constant
+- $\eta_e \left(1 - \frac{|\Gamma_0|^2 + |\Gamma_1|^2}{2}\right) |\mathbf{h}_{RU}^T \mathbf{w}|^2 \geq P_{th}$ (with $|\mathbf{h}_{RU}^T \mathbf{w}|^2$ fixed)
 
 **Grid Search Implementation:**
-- Discretize the feasible range of $\Gamma_0$ and $\Gamma_1$ (e.g., step size $\Delta$).
-- For each pair $(\Gamma_0, \Gamma_1)$, check constraints and compute $SR$.
-- Select the pair with the highest feasible secrecy rate.
+- Discretize the feasible range of $\Gamma_0$ and $\Gamma_1$ (e.g., with step size $\Delta$).
+- For each candidate pair $(\Gamma_0, \Gamma_1)$, check all constraints and compute $SR$.
+- Select the pair that yields the highest feasible secrecy rate.
 
 #### 4.2.4 AO Algorithm Summary
 
@@ -241,17 +276,15 @@ Constraints:
 2. **Initialize $(\Gamma_0, \Gamma_1)$ with values close to $\pm1$ (e.g., $\Gamma_0 = 0.8$, $\Gamma_1 = -0.8$), rather than exactly $1$ and $-1$.**  
    *Note: Setting $(\Gamma_0, \Gamma_1)$ to exactly $1$ and $-1$ is not practical, as the algorithm will not work properly in this case. Initializing with values such as $0.8$ and $-0.8$ ensures feasibility and stable algorithm performance.*
 3. Repeat:
-   - Fix $(\Gamma_0, \Gamma_1)$, optimize $\mathbf{w}$ via SCA+CVX.
+   - Fix $(\Gamma_0, \Gamma_1)$, optimize $\mathbf{w}$ via the SCA+CVX procedure described above.
    - Fix $\mathbf{w}$, optimize $(\Gamma_0, \Gamma_1)$ via grid search.
-   - Check convergence.
+   - Check for convergence.
 4. Output the final solution.
 
 **Advantages:**
-- AO with SCA+CVX for $\mathbf{w}$ and grid search for $(\Gamma_0, \Gamma_1)$ is efficient and easy to implement.
-- The method is guaranteed to converge to a stationary point.
-- Initializing $\mathbf{w}$ with MRT and $(\Gamma_0, \Gamma_1)$ with values close to $\pm1$ (e.g., $0.8$, $-0.8$) provides fast convergence and robust performance.
-
----
+- The AO framework, with SCA+CVX for $\mathbf{w}$ and grid search for $(\Gamma_0, \Gamma_1)$, is efficient and well-suited to the structure of this project's problem.
+- The SCA derivation and implementation are specifically tailored to the secrecy rate maximization with coupled constraints, ensuring both tractability and robust convergence.
+- Initializing $\mathbf{w}$ with MRT and $(\Gamma_0, \Gamma_1)$ with values close to $\pm1$ (e.g., $0.8$, $-0.8$) provides fast convergence and reliable performance in practice.
 
 ### 4.3 Heuristic Optimization Method (Future Work)
 
@@ -474,6 +507,8 @@ All analysis results and figures have been saved in `post_analysis_results.mat` 
 4. E. Campbell, M. Mohammadi, D. Mishra, and M. Matthaiou, "Beamforming and Power Allocation Design for Secure Backscatter Communication," *Proc. IEEE International Conference on Communications (ICC)*, 2023.
 5. A. Goldsmith, “Wireless Communications,” *Cambridge University Press*, 2005.
 6. D. Tse, P. Viswanath, “Fundamentals of Wireless Communication,” *Cambridge University Press*, 2005.
+7. Q. Yang, H.-M. Wang, Y. Zhang, and Z. Han, “Physical Layer Security in MIMO Backscatter Wireless Systems,” *IEEE Transactions on Wireless Communications*, vol. 15, no. 11, pp. 7547–7560, Nov. 2016, doi: 10.1109/TWC.2016.2604800.
+
 
 
 ## Acknowledgement

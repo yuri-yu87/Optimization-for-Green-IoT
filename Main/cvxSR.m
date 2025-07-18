@@ -23,8 +23,8 @@ for iter = 1:max_iter
     % === Step 1: Optimize w for fixed (gamma0, gamma1) using SCA ===
     % SCA: secrecy rate is DC, linearize the concave part at current w, solve convex problem
     % Variables: w (complex N x 1)
-    % Constraints: ||w||^2 <= Pt, EH constraint
 
+    % Constraints: ||w||^2 <= Pt, EH constraint
     hRu_norm = norm(conj(h_RU));
     EH_coeff = eta_e * (1 - (abs(gamma0)^2 + abs(gamma1)^2)/2);
     if EH_coeff > 0
@@ -49,20 +49,20 @@ for iter = 1:max_iter
     end
 
     % SCA parameters
-    sca_max_iter = 10;
-    sca_tol = 1e-4;
-    w_sca = w;
+    sca_max_iter = 30;
+    % sca_tol = 1e-4;
+    sca_tol = 1e-6;
+    w_sca = w; 
     for sca_iter = 1:sca_max_iter
         % Compute constants at current w_sca
-        hRw = h_RU' * w_sca;
+        % hRw = h_RU.' * w_sca;
         hRg = h_RU' * g;
-        hUw = h_UE' * w_sca;
         delta_gamma = gamma0 - gamma1;
         abs_delta_gamma2 = abs(delta_gamma)^2;
 
         % Signal terms
-        numR = eta_b * abs(hRw)^2 * abs(hRg)^2 * abs_delta_gamma2 / (4 * sigmaR2);
-        numE = eta_b * abs(h_UE)^2 * abs(hRw)^2 * abs_delta_gamma2 / (4 * sigmaE2);
+        % numR = eta_b * abs(hRw)^2 * abs(hRg)^2 * abs_delta_gamma2 / (4 * sigmaR2);
+        % numE = eta_b * abs(h_UE)^2 * abs(hRw)^2 * abs_delta_gamma2 / (4 * sigmaE2);
 
         % The secrecy rate is:
         % SR(w) = log2(1 + a*|h_RU'*w|^2) - log2(1 + b*|h_RU'*w|^2)
@@ -77,7 +77,7 @@ for iter = 1:max_iter
         % grad = - (2*b*conj(h_RU'*w0)*h_RU) / (ln(2)*(1 + b*|h_RU'*w0|^2))
 
         % Compute the objective value and gradient at the current point
-        hRw0 = h_RU' * w_sca;
+        hRw0 = h_RU.' * w_sca;
         denomE = 1 + b*abs(hRw0)^2;
         gradE = - (2*b*conj(hRw0)*h_RU) / (log(2)*denomE);
         f0 = log(1 + a*square_abs(hRw0))/log(2);
@@ -89,8 +89,8 @@ for iter = 1:max_iter
         
         cvx_begin quiet
             variable w_var(N) complex
-            hRw_var = h_RU' * w_var;
-            hRw0 = h_RU' * w_sca;
+            hRw_var = h_RU.' * w_var;
+            hRw0 = h_RU.' * w_sca;
             EH_linear = abs(hRw0)^2 + 2*real(conj(hRw0) * (hRw_var - hRw0));
             obj = f0 + real(grad_f0' * (w_var - w_sca)) + real(gradE'*(w_var - w_sca));
             maximize(obj)

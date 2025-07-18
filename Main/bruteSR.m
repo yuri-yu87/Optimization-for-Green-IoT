@@ -37,7 +37,7 @@ if N <= 5
     if N > 1
         phase_combinations = zeros(numel(phase_mat{1}), N-1);
         for k = 1:N-1
-            phase_combinations(:,k) = phase_mat{k}(:);
+            phase_combinations(:,k) = phase_mat{k}(:);   % from multi-dimensional to 2D
         end
     else
         phase_combinations = zeros(1,0); % N=1 special case
@@ -46,7 +46,7 @@ else
     max_dirs = 1000;
     phase_combinations = 2*pi*rand(max_dirs, max(N-1,1));
 end
-num_dirs = size(phase_combinations,1);
+num_dirs = size(phase_combinations,1); % 8^{N-1} or 1000
 
 % Precompute all direction vectors (unit norm)
 W_dir = zeros(N, num_dirs);
@@ -54,13 +54,13 @@ W_dir(1,:) = 1;
 for n = 2:N
     W_dir(n,:) = exp(1i * phase_combinations(:,n-1)).';
 end
-W_dir = W_dir ./ vecnorm(W_dir); % Normalize each column
+W_dir = W_dir ./ vecnorm(W_dir); % Normalize each column/antenna
 
 % Precompute all power-scaled beamforming vectors
-num_pwr = numel(power_range);
+num_pwr = numel(power_range); % 5
 W_all = zeros(N, num_dirs*num_pwr);
 for k = 1:num_pwr
-    idx = (k-1)*num_dirs + (1:num_dirs);
+    idx = (k-1)*num_dirs + (1:num_dirs);  % (k-1)*8^{N-1}+1:k*8^{N-1}
     W_all(:,idx) = W_dir * sqrt(power_range(k));
 end
 
@@ -80,8 +80,7 @@ mod_depth = abs(Gamma0 - Gamma1)/2;
 valid_idx = mod_depth >= mth & Gamma0 >= -1 & Gamma0 <= 1 & Gamma1 >= -1 & Gamma1 <= 1;
 Gamma0 = Gamma0(valid_idx);
 Gamma1 = Gamma1(valid_idx);
-% mod_depth = mod_depth(valid_idx);
-num_gamma = numel(Gamma0);
+num_gamma = numel(Gamma0); % valid number of (gamma0, gamma1) pairs
 
 % Precompute energy harvesting constraint term for all w
 abs_hRw2 = abs(hRw_all).^2; % 1 x (num_dirs*num_pwr)
@@ -98,18 +97,16 @@ best_g = zeros(N,1);
 for idx_gamma = 1:num_gamma
     gamma0 = Gamma0(idx_gamma);
     gamma1 = Gamma1(idx_gamma);
-    % md = mod_depth(idx_gamma); % 这个变量其实没用到，可以删掉
 
     % Energy harvesting constraint (vectorized for all w)
     P_L_avg_all = eta_e * (1 - (abs(gamma0)^2 + abs(gamma1)^2)/2) * abs_hRw2;
     valid_w_idx = find(P_L_avg_all >= Pth);
 
-    if isempty(valid_w_idx)
+    if isempty(valid_w_idx) % no feasible w fulfilling the energy harvesting constraint
         continue;
     end
 
     % SNR and secrecy rate calculation (vectorized for all valid w)
-    % hRw_valid = hRw_all(valid_w_idx); % 没用到，可以删掉
     abs_hRw2_valid = abs_hRw2(valid_w_idx);
 
     gammaR = eta_b * abs_hRw2_valid .* abs(hRg)^2 * abs(gamma0 - gamma1)^2 / (4 * sigmaR2);
@@ -131,8 +128,8 @@ end
 if best_SR == -Inf
     warning('No feasible solution found in brute force search');
     best_SR = 0;
-    best_gamma0 = 1;
-    best_gamma1 = -1;
+    best_gamma0 = 0.8;
+    best_gamma1 = -0.8;
     best_w = conj(h_RU) / norm(conj(h_RU)) * sqrt(Pt); % MRT beamforming
     best_g = h_RU / norm(h_RU); % MRC combining
 end
