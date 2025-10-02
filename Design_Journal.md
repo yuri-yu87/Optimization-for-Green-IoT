@@ -1,10 +1,6 @@
-# ELEC9123 Design Task E (Optimization for Green IoT) - Term T2, 2025
-
 **Project Title:** Secrecy Rate Maximization in Beamforming-Assisted Backscatter Communication (MIMO Reader, Single-Antenna Tag/Eavesdropper)
 
 **Author:** Yuri Yu  
-**Submission File:** `z5226692_Yu_DTE_2025.zip`
-
 
 ## Project Directory Structure
 
@@ -25,14 +21,13 @@ TaskE_Optimization_problem_of_green_iot/
 ├── *.png, *.fig                # Figures and plots for the report
 ├── Design_Journal.md           # This design report
 ├── README.md                   # Project overview
-└── ELEC9123_Design_Task_E_T2_2025_OGI.pdf # Task description
 ```
 
 ## Project Timeline
 
 This project was initiated on Friday of Week 4 and is scheduled for final submission and presentation on Friday of Week 7. The following table outlines the three-week work plan:
 
-| Week         | Dates (2025)         | Tasks and Milestones                                                                 |
+| Week         | Dates (2025 T2)         | Tasks and Milestones                                                                 |
 |--------------|---------------------|--------------------------------------------------------------------------------------|
 | **Week 5**   | Jun 5 – Jul 6       | - Literature review and system model formulation<br>- Mathematical problem definition<br>- Initial MATLAB code structure and parameter setup<br>- Report writing |
 | **Week 6**   | Jul 7 – Jul 13     | - Implementation of brute-force and AO/SCA-based optimization algorithms<br>- Debugging and validation<br>- Preliminary simulation runs and result analysis<br>- Report writing |
